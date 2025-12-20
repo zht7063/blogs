@@ -1,5 +1,7 @@
 ---
-"title": LangChain 结构解析（1）：组件架构
+title: LC结构解析1-组件架构
+tags:
+  - langchain
 ---
 
 LangChain 的核心思想在于其组件之间的协同工作模式，通过不同组件的构建、连接、包装，实现完整的、类似于一个 Graph 的应用程序（我觉得这也是为什么 LangChain 要把 LangGraph 从预览版中的“高级应用”改为正式版中的"底层架构"的原因）。
@@ -139,3 +141,72 @@ print(len(all_splits))  # splits length
 LLM 进行 RAG 的方式通常是通过高维特征空间中的特征向量相似性实现的，具体方式类似于聚类算法：通过计算两个特征向量之间的余弦相似度、欧式距离等形式的关联度，判断目标信息和查询 query 匹配性是否足够高。因此，**进行相似度计算的首要目标是将所有要被查询的内容都投影到一个维度足够高的特征空间中，这个操作一般通过嵌入模型实现。**
 
 *在这里开始，我们将需要通过 API 调用模型参与项目，可以选用本地 API（参考博客《本地部署LLM方案》）或者调用供应商的API（比较简单，不做赘述）。*
+
+在向量存储这一部分中，所有操作的首要前提就是将数据转化为高维向量，而这一操作的基础是潜入模型。我们使用 OpenAI 的嵌入模型作为演示。
+
+```python
+# uv add langchain[openai]
+from langchain_openai import OpenAIEmbeddings
+embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+```
+
+>   注意：上面的代码创建模型需要在环境变量中加入 BASE_URL 和 API_KEY，具体方式与创建 LLM 对象相同。
+
+---
+
+定义好嵌入模型后，就有了向量存储和查询的基础，接下来需要构建一个向量存储对象，向量存储对象包含用于将文本和 `Document` 对象添加到存储中，并使用各种相似度度量进行查询的方法。它们通常使用嵌入模型进行初始化，这些模型决定了文本数据如何转换为数值向量。
+
+LangChain 提供了与不同向量存储技术的集成套件，我们在这里以 Chroma 向量存储为例。
+
+```python
+# uv add langchain-chroma
+from langchain_chroma import Chroma
+
+vstore = Chroma(
+    collection_name="my_collection",
+    embedding_function=embeddings,
+    persist_directory="./data/chroma/chroma_my_collection", # 本地存储路径，用于数据持久化
+)
+```
+
+得到 Chroma 实例以后，就可以将文档片段加入到向量存储中了。
+
+```python
+ids = vstore.add_document(documents=all_splits)
+```
+
+当我们实例化了一个包含有文档的向量存储 vstore 之后，就可以对其进行查询。vstore 通常包含一下用于查询的方法：
+
+-   同步和异步；
+-   通过字符串和向量进行查询；
+-   返回、或者不反悔相似度分数；
+-   通过相似度和最大边际相关性（maximun marginal relevance）进行查询（后者可以在检索中平衡相似度与查询的多样性）。
+
+这些方法的输出通常是一个 `list[Document]`（或者是 `typing.List`）。
+
+---
+
+虽然诸如 Chroma 这样的向量存储本身并没有实现 Runnables（关于统一接口 Runnables，也可以在 Runnables 中查看），但是他们可以提供实现了借口的检索器 `Retrievers`，从而实现外部和向量存储的交互。此外，也可以通过手动包装向量存储的功能函数为 tools，将其挂载到代理上，实现代理和向量存储之间的功能交互。
+
+
+
+## 用户输入与检索
+
+这一部分对应图中的 Retrieval 板块，主要描述用户输入 query 信息之后、模型处理之前的工作。*注意：图片中的结构是一般 Agent RAG 项目结构，即针对用户的输入，首先进行信息检索，然后将用户的 query 和检索到的信息整合到一起，交给代理进行推理。*
+
+在传统 RAG 设计中，对于用户的一段自然语言 query，我们通常需要先从向量存储找到与其相关的信息材料，然后将材料与原始用户的 query 一起交给代理，让代理进行处理。因此得到用户 query 之后，我们需要先用嵌入模型，将其转化为高维向量，然后通过检索器在向量存储中检索相关信息，最后将其作为 relevant context 与原始 query 进行整合以后，交给 LLM。
+
+这个步骤涉及到的技术在“嵌入与存储”的板块中的技术类似，所以这里不做多余说明。
+
+
+
+## 编排 Orchestration
+
+
+
+
+
+## 生成 Generation
+
+
+
