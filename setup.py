@@ -18,6 +18,37 @@ TEMP_SITE_DIR = Path("./temp_site")
 PROJECT_ROOT = Path(__file__).parent
 
 
+def pull_latest_code() -> bool:
+    """
+    从 Git 仓库拉取最新代码
+    
+    Returns:
+        bool: 拉取是否成功
+    """
+    logger.info("📥 拉取最新代码...")
+    try:
+        result = subprocess.run(
+            ["git", "pull"],
+            cwd=PROJECT_ROOT,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        logger.success("✅ 代码拉取成功")
+        if result.stdout.strip():
+            logger.info(f"拉取输出: {result.stdout.strip()}")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.warning(f"⚠️ 代码拉取失败: {e}")
+        logger.warning(f"错误输出: {e.stderr}")
+        logger.warning("将继续使用当前代码进行部署")
+        return False
+    except Exception as e:
+        logger.warning(f"⚠️ 执行 git pull 时发生异常: {e}")
+        logger.warning("将继续使用当前代码进行部署")
+        return False
+
+
 def build_docs() -> bool:
     """
     构建 MkDocs 文档
@@ -98,11 +129,14 @@ def cleanup_temp_files() -> None:
 
 def deploy_task() -> None:
     """
-    完整的部署任务：构建 -> 部署 -> 清理
+    完整的部署任务：拉取代码 -> 构建 -> 部署 -> 清理
     """
     logger.info("=" * 50)
     logger.info("开始执行部署任务")
     logger.info("=" * 50)
+    
+    # 拉取最新代码
+    pull_latest_code()
     
     # 构建文档
     if not build_docs():
