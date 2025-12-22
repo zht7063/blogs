@@ -5,10 +5,14 @@ theme:
   favicon: assets/favicon.jpg
 nav:
   - '🏠 Home': index.md
+  - '🐍 Python':
+    - schedule-计划任务: 🐍 Python/py-schedule.md
   - '🦜 LangChain':
     - 组件架构: 🦜 LangChain/LangChain 结构解析（1）：组件架构.md
     - RAG信息处理技术: 🦜 LangChain/LangChain-RAG信息处理技术解析.md
     - Runnables接口: 🦜 LangChain/LC-Runnables接口解析.md
   - '📦 Prompts':
     - Cursor Rules 开发者模板: 📦 prompts/cursorrules开发者模板.md
+  - '🔧 Tools':
+    - YAML基本语法: yaml基本语法.md
   - '👤 About': about.md
