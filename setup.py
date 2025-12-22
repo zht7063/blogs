@@ -126,9 +126,28 @@ def main():
     """
     主函数：设置定时任务并运行
     """
+    # 处理日志文件权限问题：如果文件存在但无法写入，直接删除重建
+    log_file = PROJECT_ROOT / "deploy.log"
+    if log_file.exists():
+        try:
+            # 尝试检查文件是否可写
+            with open(log_file, "a"):
+                pass
+        except PermissionError:
+            # 权限不足，直接删除文件
+            try:
+                log_file.unlink()
+            except PermissionError:
+                # 如果无法删除（需要 sudo），尝试使用 sudo 删除
+                subprocess.run(
+                    ["sudo", "rm", "-f", str(log_file)],
+                    check=False,
+                    capture_output=True
+                )
+    
     # 配置 loguru
     logger.add(
-        "deploy.log",
+        str(log_file),
         rotation="10 MB",
         retention="7 days",
         level="INFO",
