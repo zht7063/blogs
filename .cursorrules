@@ -23,7 +23,7 @@ Emoji 映射表（必须且只能从以下列表中选择）：
 ♻️ Refactor: 代码重构
 ⚡️ Perf: 性能优化
 ✅ Test: 测试相关
-🔧 Chore: 构建/依赖/配置/工具链调整
+📦 Chore: 构建/依赖/配置/工具链调整
 🚀 Deploy: 部署/CI/CD/版本发布
 
 ### Examples
